@@ -17,7 +17,7 @@ resource "vault_ldap_secret_backend_static_role" "role" {
   mount           = vault_ldap_secret_backend.config.path
   role_name       = "app-ldap-role"
   username        = "svc-database"
-  rotation_period = 2764800 # 32 hari dalam detik
+  rotation_period = 2764800 # 32 days in sec
 
   depends_on = [vault_ldap_secret_backend.config]
 }
