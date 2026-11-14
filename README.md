@@ -24,3 +24,7 @@ terraform apply
 
 docker exec -it my-openldap-server ldapsearch -x -H ldap://localhost:389 -D "uid=svc-database,ou=users,dc=example,dc=org" -w "RETRIEVE NEW PASS" -b "uid=svc-database,ou=users,dc=example,dc=org" "(objectClass=*)"
 
+
+get from api
+curl -s --header "X-Vault-Token: YOUR_TOKEN" https://127.0.0.1:8200/v1/ldap/static-cred/app-ldap-role --insecure
+
