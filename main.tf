@@ -9,7 +9,7 @@ resource "vault_ldap_secret_backend" "config" {
   binddn   = "cn=admin,dc=example,dc=org"
   bindpass = "admin"
   userdn   = "ou=users,dc=example,dc=org"
-  userattr = "uid" # Menentukan atribut pencarian user
+  userattr = "uid"
   schema   = "openldap"
 }
 
