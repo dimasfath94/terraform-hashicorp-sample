@@ -28,3 +28,18 @@ docker exec -it my-openldap-server ldapsearch -x -H ldap://localhost:389 -D "uid
 get from api
 curl -s --header "X-Vault-Token: YOUR_TOKEN" https://127.0.0.1:8200/v1/ldap/static-cred/app-ldap-role --insecure
 
+
+
+SYNC DB:
+
+$env:db_pass = "YOUR_SA_DB_PASSWORD"
+
+Get Password from Vault:
+$jsonOutput = & curl.exe -s -k --header "X-Vault-Token: YOUR_VAULT_TOKEN" "https://127.0.0.1:8200/v1/ldap/static-cred/app-ldap-role"
+
+($jsonOutput | ConvertFrom-Json).data.password 
+
+RUN SCRIPT:
+.\sync-credential.ps1 
+
+
