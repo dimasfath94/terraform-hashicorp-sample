@@ -1,0 +1,9 @@
+dn: uid=svc-database,ou=users,dc=example,dc=org
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Service Account Database
+sn: Database
+uid: svc-database
+userPassword: YOUR_PASSWORD
