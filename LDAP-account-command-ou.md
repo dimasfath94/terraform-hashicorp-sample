@@ -17,7 +17,9 @@ objectClass: organizationalUnit
 ou: Hashicorp
 EOF
 
-# B. Export existing entry svc-database, ubah parent DN ke ou=Hashicorp, lalu add ke OpenLDAP
+### B. Export existing entry `svc-database`, ubah parent DN ke `ou=Hashicorp`, lalu add ke OpenLDAP
+
+```bash
 docker exec my-openldap-server ldapsearch -LLL -x -H ldap://localhost \
   -D "cn=admin,dc=example,dc=org" -w admin \
   -b "dc=example,dc=org" "(uid=svc-database)" \
@@ -37,3 +39,4 @@ docker exec my-openldap-server ldapsearch -LLL -x -H ldap://localhost \
 ' \
 | docker exec -i my-openldap-server ldapadd -x -H ldap://localhost \
   -D "cn=admin,dc=example,dc=org" -w admin
+```
