@@ -37,3 +37,13 @@ docker exec my-openldap-server ldapsearch -LLL -x -H ldap://localhost \
 ' \
 | docker exec -i my-openldap-server ldapadd -x -H ldap://localhost \
   -D "cn=admin,dc=example,dc=org" -w admin
+
+
+
+
+
+
+  #test login
+  docker exec my-openldap-server ldapwhoami -x -H ldap://localhost \
+  -D "uid=svc-database,ou=Hashicorp,dc=example,dc=org" \
+  -w "PASSWORD_SVC_DATABASE"
