@@ -21,15 +21,19 @@ EOF
 docker exec my-openldap-server ldapsearch -LLL -x -H ldap://localhost \
   -D "cn=admin,dc=example,dc=org" -w admin \
   -b "dc=example,dc=org" "(uid=svc-database)" \
-  | awk -F': ' '
-    /^dn: / {
-      # Ganti bagian setelah uid=svc-database, menjadi ou=Hashicorp,dc=example,dc=org
-      sub(/^uid=[^,]+,/, "uid=svc-database,", $2)
-      # Jika DN lama tidak diawali uid=, paksa ke uid=svc-database,ou=Hashicorp,dc=example,dc=org
-      print "dn: uid=svc-database,ou=Hashicorp,dc=example,dc=org"
-      next
+| tr -d '\r' \
+| awk -F': ' '
+  /^dn: / {
+    dn = $2
+    if (dn ~ /^uid=/) {
+      sub(/,.*$/, ",ou=Hashicorp,dc=example,dc=org", dn)
+    } else {
+      dn = "uid=svc-database,ou=Hashicorp,dc=example,dc=org"
     }
-    NF > 0 { print }
-  ' \
-  | docker exec -i my-openldap-server ldapadd -x -H ldap://localhost \
-      -D "cn=admin,dc=example,dc=org" -w admin
+    print "dn: " dn
+    next
+  }
+  NF > 0 { print }
+' \
+| docker exec -i my-openldap-server ldapadd -x -H ldap://localhost \
+  -D "cn=admin,dc=example,dc=org" -w admin
