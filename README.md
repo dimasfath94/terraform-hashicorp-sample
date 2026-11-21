@@ -4,11 +4,16 @@ terraform state rm vault_ldap_secret_backend.config vault_ldap_secret_backend_st
 
 to apply:
 terraform apply
+or:
+terraform plan -var-file="dev.tfvars"
+terraform apply -auto-approve -var-file="dev.tfvars"
 
 
 sample steps:
-
+export VAULT_ADDR='https://127.0.0.1:8200'
+export VAULT_SKIP_VERIFY='true'
 export VAULT_TOKEN="YOUR_TOKEN"
+export TF_VAR_ldap_default_bindpass='admin'
 
 docker start my-openldap-server
 
