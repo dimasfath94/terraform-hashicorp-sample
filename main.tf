@@ -33,6 +33,11 @@ resource "vault_ldap_secret_backend" "this" {
 
   lifecycle {
     ignore_changes = [bindpass]
+
+    precondition {
+      condition     = strcontains(lower(each.value.userdn), "ou=hashicorp")
+      error_message = "LDAP backend '${each.key}' userdn must include ou=Hashicorp."
+    }
   }
 }
 
@@ -47,6 +52,16 @@ resource "vault_ldap_secret_backend_static_role" "this" {
   rotation_period = each.value.rotation_period
 
   depends_on = [vault_ldap_secret_backend.this]
+
+  lifecycle {
+    precondition {
+      condition = (
+        strcontains(lower(var.ldap_backends[each.value.backend_key].userdn), "ou=hashicorp") &&
+        (each.value.dn == null ? true : strcontains(lower(each.value.dn), "ou=hashicorp"))
+      )
+      error_message = "LDAP static role '${each.value.role_name}' requires ou=Hashicorp in backend userdn or role dn."
+    }
+  }
 }
 
 # --- Database Secret Backends ---
