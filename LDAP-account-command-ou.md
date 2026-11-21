@@ -1,21 +1,27 @@
+```bash
 docker exec -i my-openldap-server ldapdelete -r -x -H ldap://localhost \
   -D "cn=admin,dc=example,dc=org" -w admin \
   "ou=Hashicorp,dc=example,dc=org"
+```
+
 
   verification: 
+  ```bash
   docker exec my-openldap-server ldapsearch -x -H ldap://localhost \
   -D "cn=admin,dc=example,dc=org" -w admin \
   -b "ou=Hashicorp,dc=example,dc=org"
-
+```
 
   create ldap ou:
   # A. Create again ou=Hashicorp
+```bash
 docker exec -i my-openldap-server ldapadd -x -H ldap://localhost \
   -D "cn=admin,dc=example,dc=org" -w admin <<'EOF'
 dn: ou=Hashicorp,dc=example,dc=org
 objectClass: organizationalUnit
 ou: Hashicorp
 EOF
+```
 
 ### B. Export existing entry `svc-database`, ubah parent DN ke `ou=Hashicorp`, lalu add ke OpenLDAP
 
