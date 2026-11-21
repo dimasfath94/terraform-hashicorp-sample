@@ -1,23 +1,111 @@
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    vault = {
+      source  = "hashicorp/vault"
+      version = ">= 3.25.0, < 5.0"
+    }
+  }
+}
+
 provider "vault" {
-  address         = "https://127.0.0.1:8200"
-  skip_tls_verify = true
+  address         = var.vault_address
+  skip_tls_verify = var.vault_skip_tls_verify
 }
 
-resource "vault_ldap_secret_backend" "config" {
-  path     = "ldap"
-  url      = "ldap://my-openldap-server:389"
-  binddn   = "cn=admin,dc=example,dc=org"
-  bindpass = "admin"
-  userdn   = "ou=users,dc=example,dc=org"
-  userattr = "uid"
-  schema   = "openldap"
+# --- LDAP Secret Backends (OpenLDAP / Active Directory / Generic LDAP) ---
+resource "vault_ldap_secret_backend" "this" {
+  for_each = var.ldap_backends
+
+  path = each.value.path
+  url  = each.value.url
+  binddn = each.value.binddn
+  bindpass = coalesce(
+    each.value.bindpass,
+    lookup(var.ldap_bindpasses, each.key, null),
+    var.ldap_default_bindpass
+  )
+  userdn       = each.value.userdn
+  userattr     = each.value.userattr
+  schema       = each.value.schema
+  insecure_tls = each.value.insecure_tls
+  starttls     = each.value.starttls
+
+  lifecycle {
+    ignore_changes = [bindpass]
+  }
 }
 
-resource "vault_ldap_secret_backend_static_role" "role" {
-  mount           = vault_ldap_secret_backend.config.path
-  role_name       = "app-ldap-role"
-  username        = "svc-database"
-  rotation_period = 2764800 # 32 days in sec
+# --- LDAP Static Roles ---
+resource "vault_ldap_secret_backend_static_role" "this" {
+  for_each = var.ldap_static_roles
 
-  depends_on = [vault_ldap_secret_backend.config]
+  mount           = vault_ldap_secret_backend.this[each.value.backend_key].path
+  role_name       = each.value.role_name
+  username        = each.value.username
+  dn              = each.value.dn
+  rotation_period = each.value.rotation_period
+
+  depends_on = [vault_ldap_secret_backend.this]
+}
+
+# --- Database Secret Backends ---
+resource "vault_mount" "db" {
+  for_each = var.database_backends
+
+  path        = each.value.path
+  type        = "database"
+  description = "Database secrets engine for ${each.key}."
+}
+
+resource "vault_database_secret_backend_connection" "this" {
+  for_each = var.database_backends
+
+  backend           = vault_mount.db[each.key].path
+  name              = each.value.connection_name
+  allowed_roles     = each.value.allowed_roles
+  verify_connection = each.value.verify_connection
+
+  dynamic "postgresql" {
+    for_each = each.value.plugin_name == "postgresql-database-plugin" ? [1] : []
+    content {
+      connection_url = each.value.connection_settings["connection_url"]
+      username       = each.value.connection_settings["username"]
+      password       = each.value.connection_settings["password"]
+    }
+  }
+
+  dynamic "mssql" {
+    for_each = each.value.plugin_name == "mssql-database-plugin" ? [1] : []
+    content {
+      connection_url = each.value.connection_settings["connection_url"]
+      username       = each.value.connection_settings["username"]
+      password       = each.value.connection_settings["password"]
+    }
+  }
+}
+
+# --- Database Static Roles ---
+resource "vault_database_secret_backend_static_role" "this" {
+  for_each = var.database_static_roles
+
+  backend         = vault_mount.db[each.value.backend_key].path
+  name            = each.value.role_name
+  db_name         = each.value.db_name
+  username        = each.value.username
+  rotation_period = each.value.rotation_period
+
+  depends_on = [vault_database_secret_backend_connection.this]
+}
+
+# --- KV v2 Secret Engines ---
+resource "vault_mount" "kv" {
+  for_each = var.kv_mounts
+
+  path        = each.value.path
+  type        = "kv-v2"
+  description = each.value.description
+  options = {
+    version = "2"
+  }
 }
